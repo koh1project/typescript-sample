@@ -3,7 +3,7 @@ import { Calculator } from "../src";
 
 describe("calculate", function () {
     it("add", function () {
-        const result = Calculator.sum([5, 2]);
+        const result = Calculator.sum([5, 1]);
         expect(result).equal(7);
     });
 });
