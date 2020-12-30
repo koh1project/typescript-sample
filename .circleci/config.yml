@@ -1,94 +1,13 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-jobs:
-  install_deps:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package-lock.json" }}
-            - v1-dependencies-
-
-      - run:
-          name: 依存関係のインストール
-          command: npm install
-
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package-lock.json" }}
-
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - node_modules/*
-
-  lint_and_test:
-    parameters:
-      node-version:
-        type: string
-        default: "12.18"
-    docker:
-      - image: cimg/node:<< parameters.node-version >>
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/project
-
-      - run:
-          name: 静的解析、テスト結果ファイルを出力するディレクトリを作成
-          command: mkdir reports
-
-      - run:
-          name: コードの静的解析を実行
-          command: npx eslint ./src --ext .ts --format junit --output-file ./reports/eslint/eslint.xml
-
-      - run:
-          name: テストを実行
-          command: npx nyc --silent npx mocha ./test/*.test.ts --require ts-node/register --reporter mocha-junit-reporter
-          environment:
-            MOCHA_FILE: ./reports/mocha/test-results.xml
-
-      - run:
-          name: コードカバレッジを生成
-          command: npx nyc report --reporter=lcov
-
-      - store_test_results:
-          path: ./reports
-
-      - store_artifacts:
-          path: ./reports
-
-      - store_artifacts:
-          path: ./coverage
-
-  build:
-    docker:
-      - image: cimg/node:12.18
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: ~/project
-
-      - run:
-          name: TypeScriptコードをビルド
-          command: npx tsc
-
+# Use a package of configuration called an orb.
+orbs:
+  # Declare a dependency on the welcome-orb
+  welcome: circleci/welcome-orb@0.4.1
+# Orchestrate or schedule a set of jobs
 workflows:
-  version: 2
-  main:
+  # Name the workflow "welcome"
+  welcome:
+    # Run the welcome/run job in its own container
     jobs:
-      - install_deps
-      - lint_and_test:
-          matrix:
-            parameters:
-              node-version: ["12.18", "current"]
-          requires:
-            - install_deps
-      - build:
-          requires:
-            - lint_and_test
+      - welcome/run
